@@ -1,14 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter_plugin_pos_integration/constants.dart';
-import 'package:flutter_plugin_pos_integration/domain/entities/payment_message/payment_message.dart';
+import 'package:flutter_plugin_pos_integration/domain/entities/auth/pos_auth.dart';
+import 'package:flutter_plugin_pos_integration/domain/entities/payment/payment_message.dart';
+import 'package:flutter_plugin_pos_integration/domain/entities/payment/payment_response.dart';
 import 'package:flutter_plugin_pos_integration/domain/entities/pos_charge/pos_charge.dart';
 import 'package:flutter_plugin_pos_integration/domain/entities/pos_device/pos_device.dart';
 import 'package:flutter_plugin_pos_integration/domain/use_cases/charge_to_string.dart';
 import 'package:flutter_plugin_pos_integration/domain/use_cases/device_to_string.dart';
+import 'package:flutter_plugin_pos_integration/domain/use_cases/get_credentials.dart';
 import 'package:flutter_plugin_pos_integration/domain/use_cases/get_devices.dart';
 import 'package:flutter_plugin_pos_integration/domain/use_cases/get_paired_device.dart';
+import 'package:flutter_plugin_pos_integration/domain/use_cases/make_payment_response.dart';
 import 'package:flutter_plugin_pos_integration/domain/use_cases/pair_device.dart';
+import 'package:flutter_plugin_pos_integration/domain/use_cases/save_credentials.dart';
 import 'package:ideploy_package/ideploy_package.dart';
 
 @lazySingleton
@@ -18,6 +23,9 @@ class PosController {
   final ChargeToStringUseCase _chargeToStringUseCase;
   final GetPairedDeviceUseCase _getPairedDeviceUseCase;
   final PairDeviceUseCase _pairDeviceUseCase;
+  final SaveCredentialsUseCase _saveCredentialsUseCase;
+  final GetCredentialsUseCase _getCredentialsUseCase;
+  final MakePaymentResponseUseCase _makePaymentResponseUseCase;
 
   PosController({
     required GetDevicesUseCase getDevicesUseCase,
@@ -25,11 +33,17 @@ class PosController {
     required ChargeToStringUseCase chargeToStringUseCase,
     required GetPairedDeviceUseCase getPairedDeviceUseCase,
     required PairDeviceUseCase pairDeviceUseCase,
+    required SaveCredentialsUseCase saveCredentialsUseCase,
+    required GetCredentialsUseCase getCredentialsUseCase,
+    required MakePaymentResponseUseCase makePaymentResponseUseCase,
   })  : _getDevicesUseCase = getDevicesUseCase,
         _deviceToStringUseCase = deviceToStringUseCase,
         _getPairedDeviceUseCase = getPairedDeviceUseCase,
         _pairDeviceUseCase = pairDeviceUseCase,
-        _chargeToStringUseCase = chargeToStringUseCase;
+        _saveCredentialsUseCase = saveCredentialsUseCase,
+        _getCredentialsUseCase = getCredentialsUseCase,
+        _chargeToStringUseCase = chargeToStringUseCase,
+        _makePaymentResponseUseCase = makePaymentResponseUseCase;
 
   final StreamController<PosDevice> _devicesController = StreamController<PosDevice>.broadcast();
   Stream<PosDevice> get devicesStream => _devicesController.stream;
@@ -37,16 +51,22 @@ class PosController {
   final StreamController<PosPairStatus> _pairStatusStreamController = StreamController<PosPairStatus>.broadcast();
   Stream<PosPairStatus> get pairStatusStream => _pairStatusStreamController.stream;
 
+  final StreamController<PosLoginStatus> _loginStatusStreamController = StreamController<PosLoginStatus>.broadcast();
+  Stream<PosLoginStatus> get loginStatusStream => _loginStatusStreamController.stream;
+
   final StreamController<Failure> _failureController = StreamController<Failure>.broadcast();
   Stream<Failure> get failuresStream => _failureController.stream;
 
-  final StreamController<PaymentMessage> _paymentController = StreamController<PaymentMessage>.broadcast();
-  Stream<PaymentMessage> get paymentStream => _paymentController.stream;
+  final StreamController<PaymentResponse> _paymentResponseController = StreamController<PaymentResponse>.broadcast();
+  Stream<PaymentResponse> get paymentResponse => _paymentResponseController.stream;
 
   final StreamController<bool> _scanningController = StreamController<bool>.broadcast();
   Stream<bool> get scanning => _scanningController.stream;
 
   PosDevice? _device;
+
+  String? _token;
+  String? get token => _token;
 
   void startScan() {
     _scanningController.add(true);
@@ -80,39 +100,64 @@ class PosController {
   String chargeToString(PosCharge charge) {
     return _chargeToStringUseCase.call(charge);
   }
-
-  static const List<String> ignoreMessages = <String>[
-    'TRANSACTION_APPROVED',
-    'TRANSACTION_DENIED',
-    'CONNECTION_RELEASED',
-    'ACTION_REMOVE_CARD',
-    'ACTION',
-  ];
+  //
+  // static const List<String> ignoreMessages = <String>[
+  //   'TRANSACTION_APPROVED',
+  //   'TRANSACTION_DENIED',
+  //   'CONNECTION_RELEASED',
+  //   'ACTION_REMOVE_CARD',
+  //   'ACTION',
+  // ];
 
   static const List<String> errorMessages = <String>[
     'Não foi possível conectar. Por favor tente novamente',
   ];
 
   void handlePaymentMessage(Map<String, dynamic> json) {
-    final PaymentMessage message = PaymentMessage.fromRawMessage(json);
-    if (message.event == POSEvent.terminalMessage && errorMessages.contains(message.data['message'])) {
-      final PaymentMessage newMessage = PaymentMessage(
-        event: POSEvent.paymentFailed,
-        data: <String, dynamic>{
-          'id': '-1',
-          'responseCode': 'ERR_FPF',
-          'error': <String, dynamic>{
-            'status_code': -1,
-            'message': message.data['message'],
-            'category': 'plugin_message',
-          },
-        },
+    PaymentMessage? message;
+    if (json['success'] == true) {
+      message = PaymentMessage.fromRawMessage(json);
+    } else {
+      message = PaymentMessage(
+        event: POSEvent.terminalMessage,
+        message: json['error'],
+        terminalMessageType: PaymentMessageType.error,
       );
+    }
+    _paymentResponseController.add(
+      PaymentResponse(
+        status: json['success'] == true ? PaymentStatusType.processing : PaymentStatusType.error,
+        terminalMessage: message,
+      ),
+    );
+  }
 
-      _paymentController.add(newMessage);
-    } else if (message.event != POSEvent.terminalMessage ||
-        (message.event == POSEvent.terminalMessage && !ignoreMessages.contains(message.data['terminalMessageType']))) {
-      _paymentController.add(message);
+  void handlePaymentResponse(Map<String, dynamic> json) {
+    if (json['success'] == false) {
+      _paymentResponseController.add(
+        PaymentResponse(
+          status: PaymentStatusType.error,
+          terminalMessage: PaymentMessage(
+            event: POSEvent.terminalMessage,
+            message: json['error'],
+            terminalMessageType: PaymentMessageType.error,
+          ),
+        ),
+      );
+    } else if (json['success'] == true && json['data']['status'] == 'start') {
+      _paymentResponseController.add(
+        PaymentResponse(
+          status: PaymentStatusType.processing,
+          terminalMessage: PaymentMessage(
+            event: POSEvent.terminalMessage,
+            message: 'Iniciando pagamento...',
+            terminalMessageType: PaymentMessageType.display,
+          ),
+        ),
+      );
+    } else if (json['success'] == true && json['data']['status'] == 'success') {
+      final response = _makePaymentResponseUseCase(json['data']['detail']);
+      _paymentResponseController.add(response);
     }
   }
 
@@ -152,5 +197,30 @@ class PosController {
 
   void setDevice(PosDevice device) {
     _device = device;
+  }
+
+  void _errorLogin() {
+    _loginStatusStreamController.add(PosLoginStatus.error);
+  }
+
+  Future<void> handleLoginStatus(Map<String, dynamic> json) async {
+    if (json['success'] == false) {
+      _errorLogin();
+    } else {
+      if (json['data']['status'] == 'requestToken') {
+        _loginStatusStreamController.add(PosLoginStatus.requestToken);
+      } else if (json['data']['status'] == 'waitingValidateToken') {
+        _token = json['data']['token'];
+        _loginStatusStreamController.add(PosLoginStatus.waitingValidateToken);
+      } else if (json['data']['status'] == 'logged') {
+        final response = await _saveCredentialsUseCase.call(json['data']);
+        response.get((reject) => _errorLogin(), (resolve) => _loginStatusStreamController.add(PosLoginStatus.success));
+      }
+    }
+  }
+
+  Future<PosCredentials?> getCredentials() async {
+    final response = await _getCredentialsUseCase.call();
+    return response.get((reject) => null, (credentials) => credentials);
   }
 }

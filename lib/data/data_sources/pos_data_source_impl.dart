@@ -1,8 +1,12 @@
 import 'dart:convert';
 
 import 'package:flutter_plugin_pos_integration/data/data_sources/pos_data_source.dart';
+import 'package:flutter_plugin_pos_integration/data/models/auth/pos_auth_model.dart';
+import 'package:flutter_plugin_pos_integration/data/models/payment/payment_response_detail_model.dart';
 import 'package:flutter_plugin_pos_integration/data/models/pos_charge/pos_charge_model.dart';
 import 'package:flutter_plugin_pos_integration/data/models/pos_device/pos_device_model.dart';
+import 'package:flutter_plugin_pos_integration/domain/entities/auth/pos_auth.dart';
+import 'package:flutter_plugin_pos_integration/domain/entities/payment/payment_response.dart';
 import 'package:flutter_plugin_pos_integration/domain/entities/pos_charge/pos_charge.dart';
 import 'package:flutter_plugin_pos_integration/domain/entities/pos_device/pos_device.dart';
 import 'package:ideploy_package/ideploy_package.dart';
@@ -61,6 +65,45 @@ class PosDataSourceImpl implements PosDataSource {
     try {
       await _openBox();
       await Hive.box('pos_integration_box').put('paired_device', PosDeviceModel.fromEntity(device).toJson());
+    } catch (error) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<PosCredentials?> getCredentials() async {
+    try {
+      await _openBox();
+      final json = await Hive.box('pos_integration_box').get('credentials');
+      if (json == null) {
+        return null;
+      }
+
+      return PosCredentialsModel.fromJson(Map.from(json)).toEntity();
+    } catch (error) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> saveCredentials(Map<String, dynamic> credentials) async {
+    try {
+      await _openBox();
+      final credentialModel = PosCredentialsModel.fromJson(credentials);
+      await Hive.box('pos_integration_box').put('credentials', credentialModel.toJson());
+    } catch (error) {
+      rethrow;
+    }
+  }
+
+  @override
+  PaymentResponse makePaymentResponse(Map<String, dynamic> data) {
+    try {
+      return PaymentResponse(
+        status: PaymentStatusType.success,
+        terminalMessage: null,
+        details: PaymentResponseDetailModel.fromJson(data).toEntity(),
+      );
     } catch (error) {
       rethrow;
     }

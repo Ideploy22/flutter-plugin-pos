@@ -1,4 +1,5 @@
-import 'package:flutter_plugin_pos_integration/domain/entities/payment_message/payment_message.dart';
+import 'package:flutter_plugin_pos_integration/domain/entities/auth/pos_auth.dart';
+import 'package:flutter_plugin_pos_integration/domain/entities/payment/payment_response.dart';
 import 'package:flutter_plugin_pos_integration/domain/entities/pos_charge/pos_charge.dart';
 import 'package:flutter_plugin_pos_integration/domain/entities/pos_device/pos_device.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -45,8 +46,12 @@ abstract class FlutterPluginPosIntegrationPlatform extends PlatformInterface {
 
   Stream<PosDevice> get devices => throw UnimplementedError('devices stream has not been implemented.');
   Stream<PosPairStatus> get pairStatus => throw UnimplementedError('pairStatus stream has not been implemented.');
-  Future<PosDevice?> get pairedDevice => throw UnimplementedError('pairedDevice stream has not been implemented.');
-  Stream<PaymentMessage> get paymentMessages =>
-      throw UnimplementedError('payment messages stream has not been implemented.');
+  Stream<PosLoginStatus> get loginStatus => throw UnimplementedError('loginStatus stream has not been implemented.');
+  Future<PosDevice?> get pairedDevice => throw UnimplementedError('pairedDevice has not been implemented.');
+  Stream<PaymentResponse> get paymentResponse =>
+      throw UnimplementedError('payment response stream has not been implemented.');
   Stream<bool> get scanning => throw UnimplementedError('scanning devices stream state has not been implemented.');
+  Future<PosCredentials?> get credentials => throw UnimplementedError('credentials has not been implemented.');
+  Future<String?> get terminalName => throw UnimplementedError('terminalName has not been implemented.');
+  String? get token => throw UnimplementedError('token has not been implemented.');
 }

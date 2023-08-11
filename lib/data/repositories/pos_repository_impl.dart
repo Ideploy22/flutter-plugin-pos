@@ -1,4 +1,6 @@
 import 'package:flutter_plugin_pos_integration/data/data_sources/pos_data_source.dart';
+import 'package:flutter_plugin_pos_integration/domain/entities/auth/pos_auth.dart';
+import 'package:flutter_plugin_pos_integration/domain/entities/payment/payment_response.dart';
 import 'package:flutter_plugin_pos_integration/domain/entities/pos_charge/pos_charge.dart';
 import 'package:flutter_plugin_pos_integration/domain/entities/pos_device/pos_device.dart';
 import 'package:flutter_plugin_pos_integration/domain/repositories/pos_repository.dart';
@@ -47,5 +49,30 @@ class PosRepositoryImpl implements PosRepository {
     } catch (error) {
       return reject(PosFailure());
     }
+  }
+
+  @override
+  Future<EitherOf<Failure, PosCredentials?>> getCredentials() async {
+    try {
+      final credentials = await _dataSource.getCredentials();
+      return resolve(credentials);
+    } catch (error) {
+      return reject(PosFailure());
+    }
+  }
+
+  @override
+  Future<EitherOf<Failure, VoidSuccess>> saveCredentials(Map<String, dynamic> credentials) async {
+    try {
+      await _dataSource.saveCredentials(credentials);
+      return resolve(voidSuccess);
+    } catch (error) {
+      return reject(PosFailure());
+    }
+  }
+
+  @override
+  PaymentResponse makePaymentResponse(Map<String, dynamic> data) {
+    return _dataSource.makePaymentResponse(data);
   }
 }

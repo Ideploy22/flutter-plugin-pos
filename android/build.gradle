@@ -48,12 +48,14 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 24
+        multiDexEnabled true
     }
 }
 
 dependencies {
     implementation 'androidx.core:core-ktx:1.10.1'
+    implementation "androidx.multidex:multidex:2.0.1"
 
     // zoop needed packs
     implementation("br.zoop.pos.plugin:mpos:3.0.1-rc-1")

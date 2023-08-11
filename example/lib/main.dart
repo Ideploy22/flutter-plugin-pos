@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_plugin_pos_integration/domain/entities/auth/pos_auth.dart';
+import 'package:flutter_plugin_pos_integration/domain/entities/payment/payment_response.dart';
 import 'package:flutter_plugin_pos_integration/domain/entities/pos_charge/pos_charge.dart';
 import 'package:flutter_plugin_pos_integration/domain/entities/pos_charge/pos_payment_type.dart';
 import 'package:flutter_plugin_pos_integration/domain/entities/pos_device/pos_device.dart';
@@ -21,12 +22,12 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
   final _posPlugin = FlutterPluginPosIntegration();
-
-  bool scanning = false;
-
+  bool _scanning = false;
   PosDevice? _deviceConnected;
+  String? _loginMessage;
+  String? _terminalName;
+  PaymentResponse? _paymentResponse;
 
   @override
   void initState() {
@@ -40,38 +41,39 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> initPlatformState() async {
-    String platformVersion;
-    try {
-      if (!await Permission.bluetoothScan.isGranted) {
-        await Permission.bluetoothScan.request();
-      }
-
-      if (!await Permission.bluetoothConnect.isGranted) {
-        await Permission.bluetoothConnect.request();
-      }
-
-      if (!await Permission.location.isGranted) {
-        await Permission.location.request();
-      }
-
-      await _posPlugin.initialize();
-      await _getPairedDevice();
-
-      platformVersion = await _posPlugin.getPlatformVersion() ?? 'Unknown platform version';
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
     if (!mounted) return;
+    if (!await Permission.bluetoothScan.isGranted) {
+      await Permission.bluetoothScan.request();
+    }
+
+    if (!await Permission.bluetoothConnect.isGranted) {
+      await Permission.bluetoothConnect.request();
+    }
+
+    if (!await Permission.location.isGranted) {
+      await Permission.location.request();
+    }
+
+    await _posPlugin.initialize();
+    await _getPairedDevice();
 
     _posPlugin.scanning.listen((event) {
       if (mounted) {
         setState(() {
-          scanning = event;
+          _scanning = event;
         });
       }
     });
 
-    _posPlugin.pairStatus.listen((event) {
+    _posPlugin.paymentResponse.listen((PaymentResponse event) {
+      if (mounted) {
+        setState(() {
+          _paymentResponse = event;
+        });
+      }
+    });
+
+    _posPlugin.pairStatus.listen((PosPairStatus event) {
       if (mounted) {
         if (event == PosPairStatus.pair) {
           _getPairedDevice();
@@ -79,9 +81,30 @@ class _MyAppState extends State<MyApp> {
       }
     });
 
-    setState(() {
-      _platformVersion = platformVersion;
+    _posPlugin.loginStatus.listen((PosLoginStatus event) {
+      if (mounted) {
+        if (event == PosLoginStatus.requestToken) {
+          setState(() {
+            _loginMessage = 'Requisitando token...';
+          });
+        } else if (event == PosLoginStatus.waitingValidateToken) {
+          setState(() {
+            _loginMessage = 'Valide o token: ${_posPlugin.token} no dashboard Zoop';
+          });
+        } else if (event == PosLoginStatus.error) {
+          setState(() {
+            _loginMessage = 'Erro ao logar';
+          });
+        } else if (event == PosLoginStatus.success) {
+          setState(() {
+            _loginMessage = 'Login realizado com sucesso';
+          });
+        }
+      }
     });
+
+    _terminalName = await _posPlugin.terminalName;
+    setState(() {});
   }
 
   @override
@@ -93,8 +116,17 @@ class _MyAppState extends State<MyApp> {
         ),
         body: Column(
           children: [
+            const SizedBox(height: 16.0),
             Center(
-              child: Text('Running on: $_platformVersion\n'),
+              child: _terminalName == null
+                  ? const Text('Você precisa realizar login para continuar...')
+                  : Text('Vendedor: ${_terminalName}'),
+            ),
+            const SizedBox(height: 16.0),
+            Center(
+              child: _deviceConnected == null
+                  ? const Text('Você precisa parear uma POS para continuar...')
+                  : Text('POS: ${_deviceConnected?.name}'),
             ),
             const SizedBox(height: 16.0),
             ElevatedButton(
@@ -109,17 +141,30 @@ class _MyAppState extends State<MyApp> {
             const SizedBox(height: 16.0),
             ElevatedButton(
               onPressed: _toggleScan,
-              child: Text(scanning ? 'STOP SCAN' : 'SCAN'),
+              child: Text(_scanning ? 'STOP SCAN' : 'SCAN'),
             ),
             const SizedBox(height: 16.0),
             const Text('Devices:'),
             PosDevices(
-              scanning: scanning,
+              scanning: _scanning,
               devices: _posPlugin.devices,
               deviceConnected: _deviceConnected,
               onRequestConnection: (PosDevice device) => _onRequestConnection(device),
               onRequestCharge: (PosDevice device) => _charge(),
             ),
+            if (_loginMessage != null) ...[
+              const SizedBox(height: 16.0),
+              Text(_loginMessage!),
+            ],
+            if (_paymentResponse != null) ...[
+              const SizedBox(height: 16.0),
+              if (_paymentResponse?.status == PaymentStatusType.error)
+                Text(_paymentResponse?.terminalMessage?.message ?? 'Erro ao processar pagamento'),
+              if (_paymentResponse?.status == PaymentStatusType.processing)
+                Text(_paymentResponse?.terminalMessage?.message ?? 'Processando pagamento...'),
+              if (_paymentResponse?.status == PaymentStatusType.success)
+                Text(_paymentResponse?.details?.approvalMessage ?? 'Pagamento realizado com sucesso!'),
+            ]
           ],
         ),
       ),
@@ -127,7 +172,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _toggleScan() {
-    if (!scanning) {
+    if (!_scanning) {
       _posPlugin.startScan();
     }
   }

@@ -4,8 +4,9 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_plugin_pos_integration/constants.dart';
+import 'package:flutter_plugin_pos_integration/domain/entities/auth/pos_auth.dart';
 import 'package:flutter_plugin_pos_integration/domain/entities/connection/connection.dart';
-import 'package:flutter_plugin_pos_integration/domain/entities/payment_message/payment_message.dart';
+import 'package:flutter_plugin_pos_integration/domain/entities/payment/payment_response.dart';
 import 'package:flutter_plugin_pos_integration/domain/entities/pos_charge/pos_charge.dart';
 import 'package:flutter_plugin_pos_integration/domain/entities/pos_device/pos_device.dart';
 import 'package:flutter_plugin_pos_integration/presentation/controller/pos_controller.dart';
@@ -41,21 +42,39 @@ class MethodChannelFlutterPluginPosIntegration extends FlutterPluginPosIntegrati
   }
 
   @override
+  Future<PosCredentials?> get credentials {
+    _initializeLocatorIfNeeded();
+    return locator<PosController>().getCredentials();
+  }
+
+  @override
   Stream<PosPairStatus> get pairStatus {
     _initializeLocatorIfNeeded();
     return locator<PosController>().pairStatusStream;
   }
 
   @override
-  Stream<PaymentMessage> get paymentMessages {
+  Stream<PosLoginStatus> get loginStatus {
     _initializeLocatorIfNeeded();
-    return locator<PosController>().paymentStream;
+    return locator<PosController>().loginStatusStream;
+  }
+
+  @override
+  Stream<PaymentResponse> get paymentResponse {
+    _initializeLocatorIfNeeded();
+    return locator<PosController>().paymentResponse;
   }
 
   @override
   Stream<bool> get scanning {
     _initializeLocatorIfNeeded();
     return locator<PosController>().scanning;
+  }
+
+  @override
+  String? get token {
+    _initializeLocatorIfNeeded();
+    return locator<PosController>().token;
   }
 
   Stream<Failure> get failuresStream {
@@ -97,14 +116,13 @@ class MethodChannelFlutterPluginPosIntegration extends FlutterPluginPosIntegrati
           posController.handlePairStatus(json);
           break;
         case POSEvent.login:
-          print('LOGIN $json');
+          posController.handleLoginStatus(json);
           break;
-        case POSEvent.paymentFailed:
-        case POSEvent.paymentSuccessful:
-        case POSEvent.paymentAborted:
+        case POSEvent.payment:
+          posController.handlePaymentResponse(json);
+          break;
         case POSEvent.terminalMessage:
-          print('POSEVENT $json');
-          // posController.handlePaymentMessage(json);
+          posController.handlePaymentMessage(json);
           break;
         default:
           // TODO: Handle this case.
@@ -115,20 +133,30 @@ class MethodChannelFlutterPluginPosIntegration extends FlutterPluginPosIntegrati
 
   @override
   Future<void> initialize() async {
-    final connection = PosConnection(
-      marketplaceId: '1b9d181fd7bf42959d005010fe053fff',
-      sellerId: '4856ba68780d40cebea14343e0ba2d30',
-      accessKey: 'c086c682-c307-4a06-8c0f-1b352f3dd6c5',
-    );
+    _initializeLocatorIfNeeded();
+    final credentials = await locator<PosController>().getCredentials();
+    String? connectionData;
 
-    await methodChannel.invokeMethod<String>('initialize', connection.toString());
-    // await methodChannel.invokeMethod<String>('initialize');
+    if (credentials != null) {
+      connectionData = PosConnection(
+        marketplaceId: credentials.marketplaceId,
+        sellerId: credentials.sellerId,
+        accessKey: credentials.accessKey,
+      ).toString();
+    }
+    await methodChannel.invokeMethod<String>('initialize', connectionData);
     eventChannel.receiveBroadcastStream().listen((dynamic event) => _mapEventToState(event));
   }
 
   @override
   Future<void> login() async {
     await methodChannel.invokeMethod<String>('login');
+  }
+
+  @override
+  Future<String?> get terminalName async {
+    final credentials = await locator<PosController>().getCredentials();
+    return credentials?.sellerName;
   }
 
   @override

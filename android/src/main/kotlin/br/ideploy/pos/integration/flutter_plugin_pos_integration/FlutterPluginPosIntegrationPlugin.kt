@@ -374,6 +374,7 @@ class FlutterPluginPosIntegrationPlugin : FlutterPlugin, ActivityAware {
                 override fun onSuccess(response: DashboardTokenResponse) {
                     Log.d(tag, "Apresentar token ao usuário: ${response.token}")
                     val responseToken = makeSuccessResponse("login", JSONObject().apply {
+                        put("status", "waitingValidateToken")
                         put("token", response.token)
                     })
                     invokeMethodUIThread(responseToken)
@@ -397,6 +398,7 @@ class FlutterPluginPosIntegrationPlugin : FlutterPlugin, ActivityAware {
                     Log.d(tag, "SellerName: ${response.owner.name}")
 
                     val responseCredentials = makeSuccessResponse("login", JSONObject().apply {
+                        put("status", "logged")
                         put("marketplaceId", response.credentials.marketplace)
                         put("sellerId", response.credentials.seller)
                         put("sellerName", response.owner.name)

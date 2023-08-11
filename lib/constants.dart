@@ -6,9 +6,7 @@ enum POSEvent {
   login('login'),
   scan('scan'),
   pair('pair'),
-  paymentFailed('paymentFailed'),
-  paymentSuccessful('paymentSuccessful'),
-  paymentAborted('paymentAborted'),
+  payment('payment'),
   terminalMessage('terminalMessage'),
   unknown('unknown');
 
