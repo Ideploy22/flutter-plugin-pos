@@ -159,9 +159,9 @@ class _MyAppState extends State<MyApp> {
             if (_paymentResponse != null) ...[
               const SizedBox(height: 16.0),
               if (_paymentResponse?.status == PaymentStatusType.error)
-                Text(_paymentResponse?.terminalMessage?.message ?? 'Erro ao processar pagamento'),
+                Text(_paymentResponse?.terminalMessage ?? 'Erro ao processar pagamento'),
               if (_paymentResponse?.status == PaymentStatusType.processing)
-                Text(_paymentResponse?.terminalMessage?.message ?? 'Processando pagamento...'),
+                Text(_paymentResponse?.terminalMessage ?? 'Processando pagamento...'),
               if (_paymentResponse?.status == PaymentStatusType.success)
                 Text(_paymentResponse?.details?.approvalMessage ?? 'Pagamento realizado com sucesso!'),
             ]

@@ -1,8 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter_plugin_pos_integration/constants.dart';
 import 'package:flutter_plugin_pos_integration/domain/entities/auth/pos_auth.dart';
-import 'package:flutter_plugin_pos_integration/domain/entities/payment/payment_message.dart';
 import 'package:flutter_plugin_pos_integration/domain/entities/payment/payment_response.dart';
 import 'package:flutter_plugin_pos_integration/domain/entities/pos_charge/pos_charge.dart';
 import 'package:flutter_plugin_pos_integration/domain/entities/pos_device/pos_device.dart';
@@ -107,15 +105,11 @@ class PosController {
   ];
 
   void handlePaymentMessage(Map<String, dynamic> json) {
-    PaymentMessage? message;
+    String? message;
     if (json['success'] == true) {
-      message = PaymentMessage.fromRawMessage(json);
+      message = json['data']['message'];
     } else {
-      message = PaymentMessage(
-        event: POSEvent.terminalMessage,
-        message: json['error'],
-        terminalMessageType: PaymentMessageType.error,
-      );
+      message = json['error'];
     }
     _paymentResponseController.add(
       PosPaymentResponse(
@@ -130,22 +124,14 @@ class PosController {
       _paymentResponseController.add(
         PosPaymentResponse(
           status: PaymentStatusType.error,
-          terminalMessage: PaymentMessage(
-            event: POSEvent.terminalMessage,
-            message: json['error'],
-            terminalMessageType: PaymentMessageType.error,
-          ),
+          terminalMessage: json['error'],
         ),
       );
     } else if (json['success'] == true && json['data']['status'] == 'start') {
       _paymentResponseController.add(
         PosPaymentResponse(
           status: PaymentStatusType.processing,
-          terminalMessage: PaymentMessage(
-            event: POSEvent.terminalMessage,
-            message: 'Iniciando pagamento...',
-            terminalMessageType: PaymentMessageType.display,
-          ),
+          terminalMessage: 'Iniciando pagamento...',
         ),
       );
     } else if (json['success'] == true && json['data']['status'] == 'success') {
