@@ -72,7 +72,7 @@ class PosRepositoryImpl implements PosRepository {
   }
 
   @override
-  PaymentResponse makePaymentResponse(Map<String, dynamic> data) {
+  PosPaymentResponse makePaymentResponse(Map<String, dynamic> data) {
     return _dataSource.makePaymentResponse(data);
   }
 }

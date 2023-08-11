@@ -57,8 +57,9 @@ class PosController {
   final StreamController<Failure> _failureController = StreamController<Failure>.broadcast();
   Stream<Failure> get failuresStream => _failureController.stream;
 
-  final StreamController<PaymentResponse> _paymentResponseController = StreamController<PaymentResponse>.broadcast();
-  Stream<PaymentResponse> get paymentResponse => _paymentResponseController.stream;
+  final StreamController<PosPaymentResponse> _paymentResponseController =
+      StreamController<PosPaymentResponse>.broadcast();
+  Stream<PosPaymentResponse> get paymentResponse => _paymentResponseController.stream;
 
   final StreamController<bool> _scanningController = StreamController<bool>.broadcast();
   Stream<bool> get scanning => _scanningController.stream;
@@ -100,14 +101,6 @@ class PosController {
   String chargeToString(PosCharge charge) {
     return _chargeToStringUseCase.call(charge);
   }
-  //
-  // static const List<String> ignoreMessages = <String>[
-  //   'TRANSACTION_APPROVED',
-  //   'TRANSACTION_DENIED',
-  //   'CONNECTION_RELEASED',
-  //   'ACTION_REMOVE_CARD',
-  //   'ACTION',
-  // ];
 
   static const List<String> errorMessages = <String>[
     'Não foi possível conectar. Por favor tente novamente',
@@ -125,7 +118,7 @@ class PosController {
       );
     }
     _paymentResponseController.add(
-      PaymentResponse(
+      PosPaymentResponse(
         status: json['success'] == true ? PaymentStatusType.processing : PaymentStatusType.error,
         terminalMessage: message,
       ),
@@ -135,7 +128,7 @@ class PosController {
   void handlePaymentResponse(Map<String, dynamic> json) {
     if (json['success'] == false) {
       _paymentResponseController.add(
-        PaymentResponse(
+        PosPaymentResponse(
           status: PaymentStatusType.error,
           terminalMessage: PaymentMessage(
             event: POSEvent.terminalMessage,
@@ -146,7 +139,7 @@ class PosController {
       );
     } else if (json['success'] == true && json['data']['status'] == 'start') {
       _paymentResponseController.add(
-        PaymentResponse(
+        PosPaymentResponse(
           status: PaymentStatusType.processing,
           terminalMessage: PaymentMessage(
             event: POSEvent.terminalMessage,

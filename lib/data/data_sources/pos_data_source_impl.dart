@@ -97,9 +97,9 @@ class PosDataSourceImpl implements PosDataSource {
   }
 
   @override
-  PaymentResponse makePaymentResponse(Map<String, dynamic> data) {
+  PosPaymentResponse makePaymentResponse(Map<String, dynamic> data) {
     try {
-      return PaymentResponse(
+      return PosPaymentResponse(
         status: PaymentStatusType.success,
         terminalMessage: null,
         details: PaymentResponseDetailModel.fromJson(data).toEntity(),

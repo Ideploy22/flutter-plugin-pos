@@ -8,7 +8,7 @@ abstract class PosRepository {
   EitherOf<Failure, List<PosDevice>> getDevices(List<dynamic> data);
   String deviceToString(PosDevice device);
   String chargeToString(PosCharge charge);
-  PaymentResponse makePaymentResponse(Map<String, dynamic> data);
+  PosPaymentResponse makePaymentResponse(Map<String, dynamic> data);
   Future<EitherOf<Failure, PosDevice?>> getPairedDevice();
   Future<EitherOf<Failure, VoidSuccess>> pairDevice(PosDevice device);
   Future<EitherOf<Failure, PosCredentials?>> getCredentials();

@@ -48,7 +48,7 @@ abstract class FlutterPluginPosIntegrationPlatform extends PlatformInterface {
   Stream<PosPairStatus> get pairStatus => throw UnimplementedError('pairStatus stream has not been implemented.');
   Stream<PosLoginStatus> get loginStatus => throw UnimplementedError('loginStatus stream has not been implemented.');
   Future<PosDevice?> get pairedDevice => throw UnimplementedError('pairedDevice has not been implemented.');
-  Stream<PaymentResponse> get paymentResponse =>
+  Stream<PosPaymentResponse> get paymentResponse =>
       throw UnimplementedError('payment response stream has not been implemented.');
   Stream<bool> get scanning => throw UnimplementedError('scanning devices stream state has not been implemented.');
   Future<PosCredentials?> get credentials => throw UnimplementedError('credentials has not been implemented.');

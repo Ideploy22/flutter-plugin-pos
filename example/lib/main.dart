@@ -27,7 +27,7 @@ class _MyAppState extends State<MyApp> {
   PosDevice? _deviceConnected;
   String? _loginMessage;
   String? _terminalName;
-  PaymentResponse? _paymentResponse;
+  PosPaymentResponse? _paymentResponse;
 
   @override
   void initState() {
@@ -65,7 +65,7 @@ class _MyAppState extends State<MyApp> {
       }
     });
 
-    _posPlugin.paymentResponse.listen((PaymentResponse event) {
+    _posPlugin.paymentResponse.listen((PosPaymentResponse event) {
       if (mounted) {
         setState(() {
           _paymentResponse = event;

@@ -11,5 +11,5 @@ abstract class PosDataSource {
   Future<void> pairDevice(PosDevice device);
   Future<PosCredentials?> getCredentials();
   Future<void> saveCredentials(Map<String, dynamic> credentials);
-  PaymentResponse makePaymentResponse(Map<String, dynamic> data);
+  PosPaymentResponse makePaymentResponse(Map<String, dynamic> data);
 }

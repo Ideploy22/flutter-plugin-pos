@@ -3,12 +3,12 @@ import 'package:flutter_plugin_pos_integration/domain/entities/payment/payment_r
 
 enum PaymentStatusType { processing, success, error }
 
-class PaymentResponse {
+class PosPaymentResponse {
   final PaymentStatusType status;
   final PaymentResponseDetail? details;
   final PaymentMessage? terminalMessage;
 
-  PaymentResponse({
+  PosPaymentResponse({
     required this.status,
     this.details,
     this.terminalMessage,

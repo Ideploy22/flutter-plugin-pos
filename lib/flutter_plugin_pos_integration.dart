@@ -31,7 +31,7 @@ class FlutterPluginPosIntegration {
   }
 
   Stream<PosDevice> get devices => FlutterPluginPosIntegrationPlatform.instance.devices;
-  Stream<PaymentResponse> get paymentResponse => FlutterPluginPosIntegrationPlatform.instance.paymentResponse;
+  Stream<PosPaymentResponse> get paymentResponse => FlutterPluginPosIntegrationPlatform.instance.paymentResponse;
   Stream<bool> get scanning => FlutterPluginPosIntegrationPlatform.instance.scanning;
   Stream<PosPairStatus> get pairStatus => FlutterPluginPosIntegrationPlatform.instance.pairStatus;
   Future<PosDevice?> get pairedDevice => FlutterPluginPosIntegrationPlatform.instance.pairedDevice;

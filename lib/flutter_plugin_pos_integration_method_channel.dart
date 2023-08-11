@@ -60,7 +60,7 @@ class MethodChannelFlutterPluginPosIntegration extends FlutterPluginPosIntegrati
   }
 
   @override
-  Stream<PaymentResponse> get paymentResponse {
+  Stream<PosPaymentResponse> get paymentResponse {
     _initializeLocatorIfNeeded();
     return locator<PosController>().paymentResponse;
   }

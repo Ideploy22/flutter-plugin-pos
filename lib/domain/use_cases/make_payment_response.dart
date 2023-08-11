@@ -8,7 +8,7 @@ class MakePaymentResponseUseCase {
 
   MakePaymentResponseUseCase({required PosRepository repository}) : _repository = repository;
 
-  PaymentResponse call(Map<String, dynamic> data) {
+  PosPaymentResponse call(Map<String, dynamic> data) {
     return _repository.makePaymentResponse(data);
   }
 }
