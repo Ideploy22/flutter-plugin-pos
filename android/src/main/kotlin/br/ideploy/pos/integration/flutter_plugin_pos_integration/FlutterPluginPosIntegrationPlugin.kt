@@ -151,15 +151,15 @@ class FlutterPluginPosIntegrationPlugin : FlutterPlugin, ActivityAware {
 
 
     override fun onDetachedFromActivityForConfigChanges() {
-        TODO("Not yet implemented")
+        Log.d(tag, "onDetachedFromActivityForConfigChanges")
     }
 
     override fun onReattachedToActivityForConfigChanges(p0: ActivityPluginBinding) {
-        TODO("Not yet implemented")
+        Log.d(tag, "onDetachedFromActivityForConfigChanges")
     }
 
     override fun onDetachedFromActivity() {
-        TODO("Not yet implemented")
+        Log.d(tag, "onDetachedFromActivityForConfigChanges")
     }
 
     private fun invokeMethodUIThread(response: JSONObject) {
