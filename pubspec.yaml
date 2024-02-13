@@ -4,8 +4,8 @@ version: 0.0.1
 publish_to: none
 
 environment:
-  sdk: '>=2.19.6 <3.0.0'
-  flutter: ">=2.5.0"
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.16.9"
 
 dependencies:
   flutter:
@@ -14,20 +14,18 @@ dependencies:
   ideploy_package:
     git:
       url: git@github.com:Ideploy22/flutter-lib-common-packages.git
-      ref: main
+      ref: 1.1.0
 
-  plugin_platform_interface: ^2.1.5
+  plugin_platform_interface: ^2.1.8
 
 
 dev_dependencies:
-  build_runner: ^2.3.3
-  dart_code_metrics: ^5.7.3
-  flutter_lints: ^2.0.1
+  build_runner: ^2.4.8
+  flutter_lints: ^3.0.1
   flutter_test:
     sdk: flutter
-  injectable_generator: ^2.1.5
-  json_serializable: ^6.6.2
-
+  injectable_generator: ^2.4.1
+  json_serializable: ^6.7.1
 
 flutter:
   plugin:
